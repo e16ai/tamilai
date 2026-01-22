@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tamil OCR Pro</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Libraries -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div class="main-layout">
+        <!-- Sidebar / Control Center -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-box"><i data-lucide="scan-text"></i></div>
+                <h2>OCR System</h2>
+            </div>
+
+            <div class="sidebar-menu">
+                <div class="menu-group">
+                    <p class="menu-label">Actions</p>
+                    <button class="nav-btn active" id="btn-new-upload">
+                        <i data-lucide="upload-cloud"></i> New Upload
+                    </button>
+                </div>
+
+                <div class="menu-divider"></div>
+
+                <div class="menu-group" id="export-group">
+                    <p class="menu-label">Export Formats</p>
+
+                    <button class="nav-btn disabled" id="dl-pdf">
+                        <i data-lucide="file-text"></i> PDF Document
+                    </button>
+                    <button class="nav-btn disabled" id="dl-docx">
+                        <i data-lucide="file-type-2"></i> Word Document
+                    </button>
+                    <button class="nav-btn disabled" id="dl-txt">
+                        <i data-lucide="file-code"></i> Plain Text
+                    </button>
+                    <button class="nav-btn disabled drive-btn" id="btn-drive">
+                        <i data-lucide="hard-drive"></i> Google Drive
+                    </button>
+                </div>
+            </div>
+
+            <div class="pro-badge">
+                <i data-lucide="shield-check"></i>
+                <span>Secure & Private</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="workspace">
+
+            <!-- Upload View -->
+            <div id="view-upload" class="view-panel active fade-in">
+                <div class="upload-card" id="drop-zone">
+                    <div class="illustration">
+                        <i data-lucide="file-up"></i>
+                    </div>
+                    <h1>Upload Tamil Document</h1>
+                    <p>Support for Images (JPG, PNG) and PDF</p>
+
+                    <button class="btn-primary" onclick="document.getElementById('file-input').click()">
+                        <i data-lucide="folder-open"></i> Browse Files
+                    </button>
+                    <input type="file" id="file-input" hidden accept="image/*">
+                </div>
+            </div>
+
+            <!-- Result View -->
+            <div id="view-result" class="view-panel hidden fade-in">
+                <div class="top-bar">
+                    <!-- Back button removed (handled by sidebar "New Upload") -->
+                    <div class="file-meta">
+                        <i data-lucide="file"></i>
+                        <span id="filename-display">document.jpg</span>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="dot green"></span> Processing Complete
+                    </div>
+                </div>
+
+                <div class="studio-grid">
+                    <!-- Preview Panel -->
+                    <div class="panel preview-panel">
+                        <div class="panel-head">Source Image</div>
+                        <div class="img-container">
+                            <img id="preview-img" src="" alt="Original">
+                            <div class="loader-overlay" id="loading-overlay">
+                                <div class="spinner"></div>
+                                <span id="status-text">Initializing...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Editor Panel -->
+                    <div class="panel editor-panel">
+                        <div class="panel-head">
+                            <span>Extracted Tamil Text</span>
+                            <div class="action-row">
+                                <button class="icon-btn" id="btn-copy" title="Copy Text"><i
+                                        data-lucide="copy"></i></button>
+                            </div>
+                        </div>
+
+                        <textarea id="output-text" placeholder="Recognized text will appear here..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="app.js?v=3"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>
