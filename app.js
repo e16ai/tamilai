@@ -17,14 +17,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnNewUpload = document.getElementById('btn-new-upload');
     const exportBtns = document.querySelectorAll('#export-group .nav-btn');
 
+    // --- 1. Init Engine (Client-Side) ---
+    // We use the local model by setting langPath to current directory
     let worker = null;
-
-    // --- 1. Init Engine ---
     (async () => {
         try {
+            console.log("Initializing Tesseract...");
+            // langPath: '.' points to the root of our Python server where tam.traineddata exists
             worker = await Tesseract.createWorker('tam', 1, {
+                langPath: '.',
+                gzip: false,
                 logger: m => console.log(m)
             });
+            console.log("Tesseract Initialized!");
         } catch (e) {
             console.error("Engine Start Failed:", e);
         }
@@ -87,7 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (!worker) {
                 statusText.innerText = "Starting Engine...";
-                worker = await Tesseract.createWorker('tam');
+                // Retry init if it failed earlier
+                worker = await Tesseract.createWorker('tam', 1, {
+                    langPath: '.',
+                    gzip: false
+                });
             }
 
             statusText.innerText = "Scanning Text...";
@@ -107,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(err);
             statusText.innerText = "Error";
             outputText.value = "Error: " + err.message;
+            loadingOverlay.style.display = 'none';
         }
     }
 
