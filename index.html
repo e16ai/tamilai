@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -70,12 +71,28 @@
                         <i data-lucide="file-up"></i>
                     </div>
                     <h1>Upload Tamil Document</h1>
+
+                    <!-- Upload Mode Options -->
+                    <div class="upload-options">
+                        <label class="option-card active" id="opt-single">
+                            <input type="radio" name="upload-mode" value="single" checked>
+                            <span class="icon"><i data-lucide="file"></i></span>
+                            <span class="label">Single Page</span>
+                        </label>
+                        <label class="option-card" id="opt-multi">
+                            <input type="radio" name="upload-mode" value="multi">
+                            <span class="icon"><i data-lucide="files"></i></span>
+                            <span class="label">Multi-Page / Batch</span>
+                        </label>
+                    </div>
+
                     <p>Support for Images (JPG, PNG) and PDF</p>
 
                     <button class="btn-primary" onclick="document.getElementById('file-input').click()">
                         <i data-lucide="folder-open"></i> Browse Files
                     </button>
-                    <input type="file" id="file-input" hidden accept="image/*">
+                    <input type="file" id="file-input" hidden accept="image/*,application/pdf">
+
                 </div>
             </div>
 
@@ -88,7 +105,7 @@
                         <span id="filename-display">document.jpg</span>
                     </div>
                     <div class="status-indicator">
-                        <span class="dot green"></span> Processing Complete
+                        <span class="dot green"></span> <span id="status-label">Processing Complete</span>
                     </div>
                 </div>
 
@@ -96,12 +113,16 @@
                     <!-- Preview Panel -->
                     <div class="panel preview-panel">
                         <div class="panel-head">Source Image</div>
-                        <div class="img-container">
+                        <div class="img-container" id="img-container">
                             <img id="preview-img" src="" alt="Original">
+                            <div class="scan-line"></div>
                             <div class="loader-overlay" id="loading-overlay">
                                 <div class="spinner"></div>
                                 <span id="status-text">Initializing...</span>
                             </div>
+                        </div>
+                        <div class="thumbnail-strip" id="thumbnail-strip">
+                            <!-- JS Injected -->
                         </div>
                     </div>
 

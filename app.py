@@ -26,7 +26,40 @@ CORS(app)
 def index():
     return app.send_static_file('index.html')
 
-# Client-side OCR only. No server-side processing.
+# Ensure uploads directory exists
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    if file:
+        try:
+            filename = file.filename
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            
+            # Configure tesseract to use the local directory for language data if present
+            # matching the README's implied structure where tam.traineddata is in the root
+            cwd = os.getcwd()
+            custom_config = f'--tessdata-dir "{cwd}" -l tam'
+            
+            # Run OCR
+            text = pytesseract.image_to_string(Image.open(filepath), config=custom_config)
+            
+            return jsonify({'text': text})
+            
+        except pytesseract.TesseractNotFoundError:
+            return jsonify({'error': 'Tesseract is not installed or not in your PATH. Please install Tesseract-OCR.'}), 500
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

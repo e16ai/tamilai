@@ -41,11 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropZone.style.borderColor = 'var(--border)';
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
     });
 
     fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length) handleFile(e.target.files[0]);
+        if (e.target.files.length) handleFiles(e.target.files);
     });
 
     // New Upload Button (Sidebar)
@@ -65,8 +65,44 @@ document.addEventListener('DOMContentLoaded', () => {
         statusIndicator.classList.remove('visible');
     });
 
-    function handleFile(file) {
-        if (!file) return;
+    // State
+    let uploadItems = []; // { file, text, status, id, src }
+    let currentMode = 'single';
+
+    // Toggle Mode
+    const optSingle = document.getElementById('opt-single');
+    const optMulti = document.getElementById('opt-multi');
+    const thumbnailStrip = document.getElementById('thumbnail-strip');
+
+    function setMode(mode) {
+        currentMode = mode;
+        if (mode === 'single') {
+            optSingle.classList.add('active');
+            optMulti.classList.remove('active');
+            fileInput.removeAttribute('multiple');
+        } else {
+            optSingle.classList.remove('active');
+            optMulti.classList.add('active');
+            fileInput.setAttribute('multiple', '');
+        }
+    }
+
+    if (optSingle && optMulti) {
+        optSingle.addEventListener('click', () => setMode('single'));
+        optMulti.addEventListener('click', () => setMode('multi'));
+    }
+
+    // Initialize PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    async function handleFiles(files) {
+        if (!files || files.length === 0) return;
+
+        // Enforce Single Mode
+        if (currentMode === 'single' && files.length > 1) {
+            alert("Single Page mode selected. Only the first file will be processed.");
+            files = [files[0]];
+        }
 
         viewUpload.classList.remove('active');
         viewUpload.classList.add('hidden');
@@ -74,50 +110,194 @@ document.addEventListener('DOMContentLoaded', () => {
         viewResult.classList.remove('hidden');
         setTimeout(() => viewResult.classList.add('active'), 50);
 
-        filenameDisplay.innerText = file.name;
+        // Reset if single mode or if starting fresh
+        if (currentMode === 'single') {
+            uploadItems = [];
+            outputText.value = '';
+            if (thumbnailStrip) {
+                thumbnailStrip.innerHTML = '';
+                thumbnailStrip.classList.add('hidden');
+            }
+        } else {
+            if (thumbnailStrip) thumbnailStrip.classList.remove('hidden');
+        }
+
         loadingOverlay.style.display = 'flex';
-        statusText.innerText = "Processing...";
         statusIndicator.classList.remove('visible');
         exportBtns.forEach(btn => btn.classList.add('disabled'));
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewImg.src = e.target.result;
-            runOCR(file);
-        };
-        reader.readAsDataURL(file);
-    }
+        const newItems = [];
 
-    async function runOCR(file) {
-        try {
-            if (!worker) {
-                statusText.innerText = "Starting Engine...";
-                // Retry init if it failed earlier
-                worker = await Tesseract.createWorker('tam', 1, {
-                    langPath: '.',
-                    gzip: false
+        // 1. Pre-process Files (Expand PDFs)
+        statusText.innerText = "Analyzing Files...";
+
+        for (const file of files) {
+            if (file.type === 'application/pdf') {
+                try {
+                    statusText.innerText = `Reading PDF: ${file.name}...`;
+                    const pdfData = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument(pdfData).promise;
+
+                    for (let p = 1; p <= pdf.numPages; p++) {
+                        // Render Page
+                        const page = await pdf.getPage(p);
+                        const viewport = page.getViewport({ scale: 1.5 }); // Good quality for OCR
+
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+                        // Convert to Blob
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        blob.name = `${file.name} (Page ${p})`; // Fake name for display
+
+                        newItems.push({
+                            id: Date.now() + Math.random(),
+                            file: blob,
+                            text: '',
+                            status: 'pending',
+                            src: URL.createObjectURL(blob),
+                            isPdfPage: true,
+                            originalName: file.name,
+                            pageInfo: `Page ${p}`
+                        });
+                    }
+                } catch (e) {
+                    console.error("PDF Error", e);
+                    alert("Failed to read PDF: " + file.name);
+                }
+            } else {
+                // Regular Image
+                newItems.push({
+                    id: Date.now() + Math.random(),
+                    file: file,
+                    text: '',
+                    status: 'pending',
+                    src: '',
+                    isPdfPage: false
+                });
+            }
+        }
+
+        uploadItems = [...uploadItems, ...newItems];
+
+        // 2. Process Queue
+        // Render Thumbnails immediately
+        renderThumbnails();
+
+        let combinedText = outputText.value;
+
+        for (let i = 0; i < newItems.length; i++) {
+            const item = newItems[i];
+
+            // If image hasn't been loaded to src yet (regular images)
+            if (!item.src) {
+                await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        item.src = e.target.result;
+                        resolve();
+                    };
+                    reader.readAsDataURL(item.file);
                 });
             }
 
-            statusText.innerText = "Scanning Text...";
+            // Show this image being processed
+            previewImg.src = item.src;
+            highlightThumbnail(item.id);
 
-            const { data: { text } } = await worker.recognize(file, {
-                rotateAuto: true
-            }, { text: true });
+            // Run OCR
+            const nameDisplay = item.isPdfPage ? `${item.originalName} [${item.pageInfo}]` : item.file.name;
+            filenameDisplay.innerText = `Processing: ${nameDisplay}...`;
+            statusText.innerText = `Scanning (${i + 1}/${newItems.length})...`;
 
+            // Start Animation
+            const imgContainer = document.getElementById('img-container');
+            if (imgContainer) imgContainer.classList.add('scanning');
+            // Hide spinner overlay to show scan
             loadingOverlay.style.display = 'none';
-            outputText.value = text;
 
-            // Enable Sidebar Export Buttons
-            exportBtns.forEach(btn => btn.classList.remove('disabled'));
-            statusIndicator.classList.add('visible');
+            try {
+                const text = await runOCR(item.file);
+                item.text = text;
+                item.status = 'done';
 
-        } catch (err) {
-            console.error(err);
-            statusText.innerText = "Error";
-            outputText.value = "Error: " + err.message;
-            loadingOverlay.style.display = 'none';
+                // Append Text
+                const header = `\n--- ${nameDisplay} ---\n`;
+                combinedText += header + text + "\n";
+                outputText.value = combinedText;
+                outputText.scrollTop = outputText.scrollHeight;
+
+            } catch (err) {
+                console.error(err);
+                item.status = 'error';
+                combinedText += `\n--- ${nameDisplay} ---\n[Error]\n`;
+                outputText.value = combinedText;
+            } finally {
+                if (imgContainer) imgContainer.classList.remove('scanning');
+            }
         }
+
+        loadingOverlay.style.display = 'none';
+        filenameDisplay.innerText = currentMode === 'single' && uploadItems.length > 0 ?
+            (uploadItems[0].originalName || uploadItems[0].file.name) : "Batch Complete";
+
+        statusText.innerText = "Done";
+        statusIndicator.classList.add('visible');
+        exportBtns.forEach(btn => btn.classList.remove('disabled'));
+        renderThumbnails(); // Update status styles if needed
+    }
+
+    function renderThumbnails() {
+        if (!thumbnailStrip) return;
+        thumbnailStrip.innerHTML = '';
+        uploadItems.forEach(item => {
+            const img = document.createElement('img');
+            img.src = item.src || 'placeholder.png'; // placeholder if not loaded yet
+            img.className = 'thumb-item';
+            img.onclick = () => showItem(item);
+            img.dataset.id = item.id;
+            thumbnailStrip.appendChild(img);
+        });
+
+        if (uploadItems.length <= 1 && currentMode === 'single') {
+            thumbnailStrip.classList.add('hidden');
+        } else {
+            thumbnailStrip.classList.remove('hidden');
+        }
+    }
+
+    function showItem(item) {
+        previewImg.src = item.src;
+        filenameDisplay.innerText = item.file.name;
+        highlightThumbnail(item.id);
+        // Note: Jumping to specific text in textarea is complex, skipping for now unless requested.
+    }
+
+    function highlightThumbnail(id) {
+        document.querySelectorAll('.thumb-item').forEach(img => {
+            if (img.dataset.id == id) img.classList.add('active');
+            else img.classList.remove('active');
+        });
+    }
+
+    async function runOCR(file) {
+        if (!worker) {
+            statusText.innerText = "Starting Engine...";
+            worker = await Tesseract.createWorker('tam', 1, {
+                langPath: '.',
+                gzip: false
+            });
+        }
+
+        const { data: { text } } = await worker.recognize(file, {
+            rotateAuto: true
+        }, { text: true });
+
+        return text;
     }
 
     // --- 3. Exports ---
