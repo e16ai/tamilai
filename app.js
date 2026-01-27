@@ -1,9 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Top Level
+    // Top Level
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const viewUpload = document.getElementById('view-upload');
     const viewResult = document.getElementById('view-result');
+
+    // Sidebar Toggle
+    const sidebar = document.getElementById('sidebar');
+    const btnMenu = document.getElementById('mobile-menu-toggle');
+    const btnCloseSidebar = document.getElementById('close-sidebar');
+
+    if (btnMenu) {
+        btnMenu.addEventListener('click', () => {
+            sidebar.classList.add('open');
+        });
+    }
+
+    if (btnCloseSidebar) {
+        btnCloseSidebar.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+        });
+    }
+
+    const closeSidebarOnAction = () => {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.remove('open');
+        }
+    };
 
     // Components
     const previewImg = document.getElementById('preview-img');
@@ -50,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // New Upload Button (Sidebar)
     btnNewUpload.addEventListener('click', () => {
+        closeSidebarOnAction();
         // Reset Views
         viewResult.classList.remove('active');
         viewResult.classList.add('hidden');

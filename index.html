@@ -20,11 +20,26 @@
 <body>
 
     <div class="main-layout">
+        <!-- Mobile Header (Visible only on mobile) -->
+        <div class="mobile-header">
+            <div class="brand-mobile">
+                <i data-lucide="scan-text"></i> OCR Pro
+            </div>
+            <button class="icon-btn" id="mobile-menu-toggle">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+
         <!-- Sidebar / Control Center -->
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="logo-box"><i data-lucide="scan-text"></i></div>
-                <h2>OCR System</h2>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="logo-box"><i data-lucide="scan-text"></i></div>
+                    <h2>OCR System</h2>
+                </div>
+                <button class="icon-btn close-sidebar" id="close-sidebar">
+                    <i data-lucide="x"></i>
+                </button>
             </div>
 
             <div class="sidebar-menu">
