@@ -633,15 +633,34 @@ body {
     .sidebar {
         position: fixed;
         inset: 0;
-        width: 100%;
+        width: 80%;
+        /* Don't cover full width */
+        max-width: 300px;
         height: 100%;
         z-index: 100;
         transform: translateX(-100%);
-        /* Hidden */
         transition: transform 0.3s ease;
         padding: 0;
         border-right: none;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     }
+
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 90;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+
 
     .sidebar.open {
         transform: translateX(0);

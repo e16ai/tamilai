@@ -8,24 +8,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sidebar Toggle
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
     const btnMenu = document.getElementById('mobile-menu-toggle');
     const btnCloseSidebar = document.getElementById('close-sidebar');
 
-    if (btnMenu) {
-        btnMenu.addEventListener('click', () => {
+    const toggleSidebar = (show) => {
+        if (show) {
             sidebar.classList.add('open');
-        });
-    }
-
-    if (btnCloseSidebar) {
-        btnCloseSidebar.addEventListener('click', () => {
+            if (overlay) overlay.classList.add('active');
+        } else {
             sidebar.classList.remove('open');
-        });
-    }
+            if (overlay) overlay.classList.remove('active');
+        }
+    };
+
+    if (btnMenu) btnMenu.addEventListener('click', () => toggleSidebar(true));
+    if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', () => toggleSidebar(false));
+    if (overlay) overlay.addEventListener('click', () => toggleSidebar(false));
 
     const closeSidebarOnAction = () => {
         if (window.innerWidth <= 768) {
-            sidebar.classList.remove('open');
+            toggleSidebar(false);
         }
     };
 
