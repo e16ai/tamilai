@@ -684,4 +684,41 @@ body {
         display: none;
         /* Save space on mobile, or make smaller */
     }
+
+    /* Optimized Upload Options for Mobile */
+    .upload-options {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .option-card {
+        width: 100%;
+        flex-direction: row;
+        padding: 0.8rem;
+        justify-content: flex-start;
+    }
+
+    .option-card .icon {
+        font-size: 1.2rem;
+    }
+
+    .option-card .label {
+        font-size: 0.9rem;
+    }
+
+    /* Adjust Thumbnails for Mobile */
+    .thumbnail-strip {
+        height: 70px;
+    }
+
+    .thumb-item {
+        width: 50px;
+        height: 50px;
+    }
+
+    /* Improve Editor Area on Mobile */
+    #output-text {
+        padding: 1rem;
+        font-size: 0.95rem;
+    }
 }
